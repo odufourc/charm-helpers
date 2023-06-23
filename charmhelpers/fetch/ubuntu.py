@@ -760,12 +760,46 @@ def _add_apt_repository(spec):
     :param spec: the parameter to pass to add_apt_repository
     :type spec: str
     """
+    series = get_distrib_codename()
+    # this handles ovn-source option for ovn charms
+    if 'ovn' in spec:
+        filename = '/etc/apt/sources.list.d/cloud-archive-ovn.list'
+    else:
+        filename = '/etc/apt/sources.list.d/cloud-archive.list'
+
     if '{series}' in spec:
-        series = get_distrib_codename()
         spec = spec.replace('{series}', series)
-    _run_with_retries(['add-apt-repository', '--yes', spec],
-                      cmd_env=env_proxy_settings(['https', 'http', 'no_proxy'])
-                      )
+
+    # when a full deb url entry is given
+    if re.match(r"^deb http[s]?:(.*)$", spec):
+        with open(filename, 'w') as apt:
+            apt.write(spec)
+    # when only a http(s) url is given
+    elif re.match(r"^http[s]?:(.*)$", spec):
+        url = f"deb {spec}"
+        if len(spec.split()) < 2:
+            url += f" {series} main"
+        with open(filename, 'w') as apt:
+            apt.write(url)
+    # to handle ppa entry
+    elif re.match(r"^ppa:(.*)$", spec):
+        repository = re.sub("^ppa:", '', spec)
+        url = f"deb http://ppa.launchpad.net/" \
+              f"{repository}/ubuntu {series} main"
+        with open(filename, 'w') as apt:
+            apt.write(url)
+    # to take care of cloud-archive entry
+    elif re.match(r"^cloud-archive:(.*)$", spec):
+        release = re.sub(r"^cloud-archive:", '', spec)
+        _add_cloud_pocket(release)
+    # as a last resort fallback nothing matched
+    else:
+        _run_with_retries(['add-apt-repository', '--yes', spec],
+                          cmd_env=env_proxy_settings(['https',
+                                                      'http',
+                                                      'no_proxy']
+                                                     )
+                          )
 
 
 def __write_sources_list_d_actual_pocket(file, actual_pocket):
