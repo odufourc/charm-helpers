@@ -547,15 +547,10 @@ class OpenStackHelpersTestCase(TestCase):
             src = 'ppa:gandelman-a/openstack'
             openstack.configure_installation_source(src)
             _codename.return_value = 'jammy'
-            result = "deb http://ppa.launchpad.net/gandelman-a/openstack/ubuntu jammy main"
-            #_file.write.assert_called_with(result)
-            _file.assert_called_once_with(
-                '/etc/apt/sources.list.d/cloud-archive.list', 'w')
-            #ex_cmd = [
-            #    'add-apt-repository', '--yes', 'ppa:gandelman-a/openstack']
-            #mock.assert_called_with(ex_cmd, env={})
+            ex_cmd = [
+                'add-apt-repository', '--yes', 'ppa:gandelman-a/openstack']
+            mock.assert_called_with(ex_cmd, env={})
 
-    #@patch('subprocess.check_call')
     @patch.object(fetch, 'get_distrib_codename')
     @patch('builtins.open')
     @patch.object(fetch, 'import_key')
@@ -567,11 +562,6 @@ class OpenStackHelpersTestCase(TestCase):
         _import.assert_called_with('KEYID')
         result = "deb http://ubuntu-cloud.archive.canonical.com/ubuntu " \
                  "precise-havana main"
-        #_file.write.assert_called_with(result)
-        #_spcc.assert_called_once_with(
-        #    ['add-apt-repository', '--yes',
-        #     'deb http://ubuntu-cloud.archive.canonical.com/ubuntu '
-        #     'precise-havana main'], env={})
 
     @patch.object(fetch, 'get_distrib_codename')
     @patch('builtins.open')
@@ -589,10 +579,6 @@ class OpenStackHelpersTestCase(TestCase):
         src = ('deb http://archive.ubuntu.com/ubuntu/ precise-proposed '
                'restricted main multiverse universe')
         openstack.configure_installation_source(src)
-        #_spcc.assert_called_once_with(
-        #    ['add-apt-repository', '--yes',
-        #     'deb http://archive.ubuntu.com/ubuntu/ precise-proposed '
-        #     'restricted main multiverse universe'], env={})
 
     @patch('charmhelpers.fetch.filter_installed_packages')
     @patch('charmhelpers.fetch.apt_install')

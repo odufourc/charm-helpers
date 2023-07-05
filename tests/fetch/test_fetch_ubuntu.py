@@ -263,83 +263,63 @@ class FetchTest(TestCase):
         fetch.add_source(source=None)
         self.assertTrue(log.called)
 
-    #@patch('subprocess.check_call')
+    @patch('subprocess.check_call')
     @patch.object(fetch, 'get_distrib_codename')
-    def test_add_source_ppa(self, get_distrib_codename):
+    def test_add_source_ppa(self, get_distrib_codename, check_call):
         get_distrib_codename.return_value = 'jammy'
         source = "ppa:test-ppa"
-        result = "deb http://ppa.launchpad.net/test-ppa/ubuntu jammy main"
-        with patch_open() as (mock_open, mock_file):
-            fetch.add_source(source=source)
-            mock_file.write.assert_called_with(result)
-            mock_open.assert_called_once_with(
-                '/etc/apt/sources.list.d/cloud-archive.list', 'w')
-        #fetch.add_source(source=source)
-        #check_call.assert_called_with(
-        #    ['add-apt-repository', '--yes', source], env={})
+        fetch.add_source(source=source)
+        check_call.assert_called_with(
+            ['add-apt-repository', '--yes', source], env={})
 
     @patch("charmhelpers.fetch.ubuntu.log")
-    #@patch('subprocess.check_call')
+    @patch('subprocess.check_call')
     @patch.object(fetch, 'get_distrib_codename')
     @patch('time.sleep')
-    def test_add_source_ppa_retries_30_times(self, sleep, get_distrib_codename, log):
+    def test_add_source_ppa_retries_30_times(self, sleep, get_distrib_codename, check_call, log):
         self.call_count = 0
 
-        #def side_effect(*args, **kwargs):
-        #    """Raise an 3 times, then return 0 """
-        #    self.call_count += 1
-        #    if self.call_count <= fetch.CMD_RETRY_COUNT:
-        #        raise subprocess.CalledProcessError(
-        #            returncode=1, cmd="some add-apt-repository command")
-        #    else:
-        #        return 0
-        #check_call.side_effect = side_effect
+        def side_effect(*args, **kwargs):
+            """Raise an 3 times, then return 0 """
+            self.call_count += 1
+            if self.call_count <= fetch.CMD_RETRY_COUNT:
+                raise subprocess.CalledProcessError(
+                    returncode=1, cmd="some add-apt-repository command")
+            else:
+                return 0
+        check_call.side_effect = side_effect
 
         get_distrib_codename.return_value = 'jammy'
         source = "ppa:test-ppa"
-        result = "deb http://ppa.launchpad.net/test-ppa/ubuntu jammy main"
-        with patch_open() as (mock_open, mock_file):
-            fetch.add_source(source=source)
-            mock_file.write.assert_called_with(result)
-            mock_open.assert_called_once_with(
-                '/etc/apt/sources.list.d/cloud-archive.list', 'w')
-#        fetch.add_source(source=source)
-#        check_call.assert_called_with(
-#            ['add-apt-repository', '--yes', source], env={})
-        #sleep.assert_called_with(10)
-        #self.assertTrue(fetch.CMD_RETRY_COUNT, sleep.call_count)
+        fetch.add_source(source=source)
+        check_call.assert_called_with(
+            ['add-apt-repository', '--yes', source], env={})
+        sleep.assert_called_with(10)
+        self.assertTrue(fetch.CMD_RETRY_COUNT, sleep.call_count)
 
     @patch('charmhelpers.fetch.ubuntu.log')
     @patch.object(fetch, 'get_distrib_codename')
-    #@patch('subprocess.check_call')
     def test_add_source_http_ubuntu(self, get_distrib_codename, log):
         source = "http://archive.ubuntu.com/ubuntu raring-backports main"
         result = "deb http://archive.ubuntu.com/ubuntu raring-backports main"
         get_distrib_codename.return_value = 'jammy'
-        #fetch.add_source(source=source)
         with patch_open() as (mock_open, mock_file):
             fetch.add_source(source=source)
             mock_file.write.assert_called_with(result)
             mock_open.assert_called_once_with(
                 '/etc/apt/sources.list.d/cloud-archive.list', 'w')
-        #check_call.assert_called_with(
-        #    ['add-apt-repository', '--yes', source], env={})
 
     @patch('charmhelpers.fetch.ubuntu.log')
     @patch.object(fetch, 'get_distrib_codename')
-    #@patch('subprocess.check_call')
     def test_add_source_https(self, get_distrib_codename, log):
         source = "https://example.com"
         result = "deb https://example.com jammy main"
         get_distrib_codename.return_value = 'jammy'
-        #fetch.add_source(source=source)
         with patch_open() as (mock_open, mock_file):
             fetch.add_source(source=source)
             mock_file.write.assert_called_with(result)
             mock_open.assert_called_once_with(
                 '/etc/apt/sources.list.d/cloud-archive.list', 'w')
-        #check_call.assert_called_with(
-        #    ['add-apt-repository', '--yes', source], env={})
 
     @patch('charmhelpers.fetch.ubuntu.log')
     @patch.object(fetch, 'get_distrib_codename')
@@ -391,7 +371,6 @@ class FetchTest(TestCase):
                 ' '.join(curl_cmd): PGP_KEY_ASCII_ARMOR,
             }[' '.join(command)]
         check_output.side_effect = check_output_side_effect
-        #get_distrib_codename.return_value = 'jammy'
         source = "http://archive.ubuntu.com/ubuntu raring-backports main"
         result = "deb http://archive.ubuntu.com/ubuntu raring-backports main"
         check_call.return_value = 0  # Successful exit code
@@ -400,9 +379,6 @@ class FetchTest(TestCase):
             mock_file.write.assert_called_with(result)
             mock_open.assert_called_once_with(
                 '/etc/apt/sources.list.d/cloud-archive.list', 'w')
-        #fetch.add_source(source=source, key=PGP_KEY_ID)
-        #check_call.assert_any_call(
-        #    ['add-apt-repository', '--yes', source], env={}),
         check_output.assert_has_calls([
             call(['curl', ('https://keyserver.ubuntu.com'
                            '/pks/lookup?op=get&options=mr'
@@ -444,9 +420,6 @@ class FetchTest(TestCase):
             mock_file.write.assert_called_with(result)
             mock_open.assert_called_once_with(
                 '/etc/apt/sources.list.d/cloud-archive.list', 'w')
-        #fetch.add_source(source=source, key=PGP_KEY_ID)
-        #check_call.assert_any_call(
-        #    ['add-apt-repository', '--yes', source], env={}),
         check_output.assert_has_calls([
             call(['curl', ('https://keyserver.ubuntu.com'
                            '/pks/lookup?op=get&options=mr'
@@ -493,7 +466,6 @@ fpr:::::::::35F77D63B5CEC106C577ED856E85A86E4652B4E6:
             fetch.add_source(source=source, key=key)
             mock_open.assert_called_once_with(
                 '/etc/apt/sources.list.d/cloud-archive.list', 'w')
-        #fetch.add_source(source=source, key=key)
         popen.assert_called_with(
             ['gpg', '--with-colons', '--with-fingerprint'],
             stdout=subprocess.PIPE,
@@ -502,8 +474,6 @@ fpr:::::::::35F77D63B5CEC106C577ED856E85A86E4652B4E6:
         dearmor_gpg_key.assert_called_with(key_bytes)
         w_keyfile.assert_called_with(key_name=expected_key,
                                      key_material=PGP_KEY_BIN_PGP)
-        #check_call.assert_any_call(
-        #    ['add-apt-repository', '--yes', source], env={}),
 
     @patch.object(fetch, '_write_apt_gpg_keyfile')
     @patch.object(fetch, '_dearmor_gpg_key')
@@ -545,7 +515,6 @@ uid:-::::1232306042::52FE92E6867B4C099AA1A1877A804A965F41A98C::ppa::::::::::0:
             fetch.add_source(source=source, key=key)
             mock_open.assert_called_once_with(
                 '/etc/apt/sources.list.d/cloud-archive.list', 'w')
-        #fetch.add_source(source=source, key=key)
         popen.assert_called_with(
             ['gpg', '--with-colons', '--with-fingerprint'],
             stdout=subprocess.PIPE,
@@ -554,8 +523,6 @@ uid:-::::1232306042::52FE92E6867B4C099AA1A1877A804A965F41A98C::ppa::::::::::0:
         dearmor_gpg_key.assert_called_with(key_bytes)
         w_keyfile.assert_called_with(key_name=expected_key,
                                      key_material=PGP_KEY_BIN_PGP)
-        #check_call.assert_any_call(
-        #    ['add-apt-repository', '--yes', source], env={}),
 
     def test_add_source_cloud_invalid_pocket(self):
         source = "cloud:havana-updates"
@@ -674,15 +641,11 @@ uid:-::::1232306042::52FE92E6867B4C099AA1A1877A804A965F41A98C::ppa::::::::::0:
         check_call.return_value = 0
         source = "http://archive.ubuntu.com/ubuntu raring-backports main"
         result = "deb http://archive.ubuntu.com/ubuntu raring-backports main"
-        key_id = PGP_KEY_ID
         with patch_open() as (mock_open, mock_file):
             fetch.add_source(source=source, key=PGP_KEY_ID)
             mock_file.write.assert_called_with(result)
             mock_open.assert_called_once_with(
                 '/etc/apt/sources.list.d/cloud-archive.list', 'w')
-        #fetch.add_source(source=source, key=key_id)
-        #check_call.assert_any_call(
-        #    ['add-apt-repository', '--yes', source], env={}),
         check_output.assert_has_calls([
             call(['curl', ('https://keyserver.ubuntu.com'
                            '/pks/lookup?op=get&options=mr'
@@ -724,9 +687,6 @@ uid:-::::1232306042::52FE92E6867B4C099AA1A1877A804A965F41A98C::ppa::::::::::0:
             mock_file.write.assert_called_with(result)
             mock_open.assert_called_once_with(
                 '/etc/apt/sources.list.d/cloud-archive.list', 'w')
-        #fetch.add_source(source=source, key=PGP_KEY_ID)
-        #check_call.assert_any_call(
-        #    ['add-apt-repository', '--yes', source], env={}),
         check_output.assert_has_calls([
             call(['curl', ('https://keyserver.ubuntu.com'
                            '/pks/lookup?op=get&options=mr'

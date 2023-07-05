@@ -782,12 +782,13 @@ def _add_apt_repository(spec):
         with open(filename, 'w') as apt:
             apt.write(url)
     # to handle ppa entry
-    elif re.match(r"^ppa:(.*)$", spec):
-        repository = re.sub("^ppa:", '', spec)
-        url = f"deb http://ppa.launchpad.net/" \
-              f"{repository}/ubuntu {series} main"
-        with open(filename, 'w') as apt:
-            apt.write(url)
+    # skipped for now to handle gpg keys from ppa in a better way
+    # elif re.match(r"^ppa:(.*)$", spec):
+    #    repository = re.sub("^ppa:", '', spec)
+    #    url = f"deb http://ppa.launchpad.net/" \
+    #          f"{repository}/ubuntu {series} main"
+    #    with open(filename, 'w') as apt:
+    #        apt.write(url)
     # to take care of cloud-archive entry
     elif re.match(r"^cloud-archive:(.*)$", spec):
         release = re.sub(r"^cloud-archive:", '', spec)
